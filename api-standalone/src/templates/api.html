@@ -1,0 +1,249 @@
+<html>
+  <head>
+    <title>Standalone API Service</title>
+
+    <!-- switchable-->
+    <link href="/static/base.css" rel="stylesheet">
+    <link href="/static/main.css" rel="stylesheet">
+    <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="/static/jQuery.easing.js"></script>
+    <script src="/static/switchable.min.js"></script>
+
+    <!-- websocket code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        const socket = io('http://' + document.domain  + ':' +  location.port,{
+            transports: ['websocket']});
+        var slideCount = 0;
+        socket.on('connect', function() {
+            socket.emit('register', {data: 'I\'m connected!'});
+        });
+
+        socket.on('aoi_image_in', function(data) {
+
+            console.log("data['wip_serial_number']="+ data['wip_serial_number']);
+            //render image comes in
+            var d = new Date();
+            var time = d.toLocaleTimeString();
+            var html_content = '<div class="content"><img src="' + data['file_path'] + '"></img></div>';
+            
+            //addSlider(data['id'],html_content);
+
+        });        
+
+        socket.on('aoi_image_out', function(data) {
+            $('#response').html('');
+            //$('#response').append('<p>call_id '+ data.call_id +' end received(end)</p>');
+        });        
+        
+        socket.on('disconnect', function(){console.log('disconnected');});
+
+        // on reconnection, reset the transports option, as the Websocket
+        // connection may have failed (caused by proxy, firewall, browser, ...)
+        socket.on('reconnect_attempt', () => {
+            socket.io.opts.transports = ['polling', 'websocket'];
+        });  
+
+    </script>
+    <style>
+        textarea{
+            width: 300px;
+            height: 40px;
+        }
+
+        .node rect {
+        cursor: move;
+        fill-opacity: .9;
+        shape-rendering: crispEdges;
+        }
+
+        .node text {
+        pointer-events: none;
+        text-shadow: 0 1px 0 #fff;
+        }
+
+        .link {
+        fill: none;
+        stroke: #000;
+        stroke-opacity: .2;
+        }
+
+        .cycleLink {
+        fill: #600;
+        opacity: .2;
+        stroke: none;
+        stroke-linejoin: "round";
+        }
+
+        .cycleLink:hover {
+        opacity: .5;
+        }
+
+        .link:hover {
+        stroke-opacity: .5;
+        }      
+        
+        .full-circle {
+            background-color: #007bff; 
+            height: 24px;
+            width: 24px;
+            -webkit-border-radius: 75px;
+            -moz-border-radius: 75px;
+            display: inline-block;
+        }        
+
+        .service-metadata {
+            font-size: 20px;
+            display:inline;
+            height: 30px;
+            line-height: 30px;
+        }                
+
+        span {
+            display: inline-block;
+            vertical-align: middle;
+            line-height: normal;
+          }     
+          
+        .service-span {
+            align-self: center;
+            width: 1000px;
+        }        
+    </style>    
+ 
+  </head>
+  <body>
+    <h1>API Standalone Service</h1>
+
+    <!-- sanky diagram sample-->
+    <hr/>
+    <p id="chart"></p>
+        <div class="tit mb20 mt20">
+            <h3>Postgre Database Query Result</h3>
+        </div>
+        <div class="slider-demo-01 mb20">
+            <div class="slider-wrap">
+                <ul class="slider-main">
+                        <li class="slider-panel"><div class="welcome"> Waiting for Query Result....</div></li>
+                </ul>
+            </div>
+            <div class="slider-extra">
+                <ul class="slider-nav">
+                        <li class="slider-item"></li>
+                </ul>
+                <div class="slider-page">
+                    <a href="javascript:void(0)" class="slider-prev">&lt;</a>
+                    <a href="javascript:void(0)"  class="slider-next">&gt;</a>
+                </div>
+            </div>
+        
+        </div>  
+
+        <span class="service-span" align="center">
+            <div class="full-circle" id="data_collection_version_color_div"></div>    
+            <div class="service-metadata" id="data_collection_name_div"></div> <div class="service-metadata" id="data_collection_version_div"></div>        
+        </span>           
+     
+        
+   <script>
+
+        var api = $(".slider-demo-01").switchable({
+            type:"slider",
+            //isAutoPlay:!0,
+            //seamlessLoop:!0,
+            contentClass:"slider-main",
+            mainClass:"slider-panel",
+            navItem:"slider-item",
+            prevClass:"slider-prev",
+            nextClass:"slider-next",
+            navSelectedClass:"slider-active",
+            stayTime: 10e3,
+            circular: false,
+            api:true
+        });   
+
+        function addSlider(index, html_content) {
+            // hide other tabs
+
+            $(".slider-demo-01").find('.slider-main').append('<li class="slider-panel">'+html_content+'</li>');
+            $(".slider-demo-01").find('.slider-nav').append('<li class="slider-item"></li>');
+
+            var api = $(".slider-demo-01").switchable( {
+                type:"slider",
+                //isAutoPlay:!0,
+                contentClass:"slider-main",
+                mainClass:"slider-panel",
+                navItem:"slider-item",
+                prevClass:"slider-prev",
+                nextClass:"slider-next",
+                navSelectedClass:"slider-active",
+                stayTime: 10e3,
+                //circular: false
+                defaultPanel: (slideCount+1),
+                includeMargin: true
+            }); 
+            slideCount++;
+            
+        }   
+
+        function dataCollectionVersionHandler() {
+            var waitingCounter = 0;
+	        this.self = this;
+	        this.success = function(){
+	                console.log("init_data_collection_healthStatus -- green");
+	                $("#data_collection_version_color_div").attr("style", "background-color : limegreen;");
+	        };
+	        this.failed = function(){
+	                console.log("init_data_collection_healthStatus -- red");
+	                $("#data_collection_version_color_div").attr("style", "background-color : #FFA07A;");
+            };
+            this.notifyUI = function(serviceName, serviceVersion){
+                $("#data_collection_name_div").html("<span>" + serviceName + "</span>");
+                $("#data_collection_version_div").html("<span>" + serviceVersion + "</span>");
+            }
+	        this.getVersion = function(){
+	                return $.ajax({
+                                url : data_collection_vrsion_url,
+                                data : {},
+                                dataType : "json",
+                                error : null,
+                                async : false,
+                                method : "GET",
+                        }).responseJSON;
+	        };
+	        this.check = function(self){
+                    var ver_json = self.getVersion();
+                    /**
+                    Sample of ver_json
+                    {"app":{"name":"data-collection","description":"Sample Description","version":"1.0.0"}}
+                    */
+	                if(ver_json){
+                        self.success();
+                        if('app' in ver_json && 'name' in ver_json['app'] && 'version' in ver_json['app']){
+                            self.notifyUI(ver_json['app']['name'],ver_json['app']['version'])
+                        }
+	                }else{
+                        waitingCounter +=1;
+                        self.failed();
+                        self.notifyUI('Connecting ',".".repeat(waitingCounter%4))
+	                }
+	                setTimeout(function(){
+	                        self.check(self);
+	                }, 2000);
+	        };
+	        this.start = function(){
+	                this.check(this.self);
+	        };
+	    }
+	
+        function initDataCollectionVersion(){
+                new dataCollectionVersionHandler().start();
+        }
+
+        $(document).ready(function() {
+            initDataCollectionVersion();
+        });        
+
+    </script> 
+  </body>
+</html>
