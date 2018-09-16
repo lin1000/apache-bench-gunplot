@@ -5,6 +5,8 @@
    :synopsis: An API service module 
 
 """
+import logging
+logging.basicConfig(filename='/app/data/var/log/api_standalone.log', level=logging.DEBUG)
 
 from  lib.socket_io_base import SocketIOBase
 import amqpstorm
@@ -12,7 +14,6 @@ import threading
 from time import sleep
 import time
 from datetime import datetime
-import logging
 from flask import Flask, render_template, url_for, session, request, send_from_directory
 import json
 from flask_socketio import SocketIO 
@@ -20,6 +21,7 @@ from jinja2 import Environment
 import jinja2
 import sys, os
 import pprint
+from lib import sqlalchemy_style_1
 
 PP = pprint.PrettyPrinter(indent=4)
 
@@ -107,5 +109,5 @@ class ApiStandaloneService(SocketIOBase):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     ApiStandaloneService(host="0.0.0.0", port=8081)

@@ -54,7 +54,7 @@ function docker_push(){
 # $4 is container expose port
 function docker_run_local(){
 	docker_rm $1-local
-	docker run --name $1-local -d -p $3:$4 -v "$(pwd)/$(dirname $BASH_SOURCE)/data:/app/data" $1:$2 	
+	docker run --name $1-local -d -p $3:$4 -p 8091:9001 -v "$(pwd)/$(dirname $BASH_SOURCE)/data:/app/data" $1:$2 	
 }
 
 # $1 is container_name

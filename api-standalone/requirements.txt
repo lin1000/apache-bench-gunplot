@@ -2,3 +2,5 @@ flask_socketio
 amqpstorm
 jsonify
 sphinx
+psycopg2-binary
+SQLAlchemy

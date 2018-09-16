@@ -27,7 +27,8 @@ ENV PATH "/root/anaconda3/bin:$PATH"
 RUN /root/anaconda3/bin/conda create -f --name aoi_py3 python=3.6 
 
 #Application Specific Python Libraries
-RUN pip install scikit-image pandas gevent python-socketio gevent-websocket 
+RUN pip install --upgrade pip && pip install scikit-image pandas gevent python-socketio gevent-websocket
+RUN apt-get install -y supervisor
 
 ENV PYTHONPATH="/app/lib:${PYTHONPATH}"
 ENV LD_LIBRARY_PATH="/app/lib"
@@ -52,7 +53,9 @@ COPY doc/service-doc/html /app/static/
 
 ENV __FLUSH_LOG 1
 
-ENTRYPOINT "python" "/app/api_standalone.py"
+#ENTRYPOINT "python" "/app/api_standalone.py"
+ENTRYPOINT ["/usr/bin/supervisord","-c", "/app/data/etc/supervisor/supervisord.conf"]
+
 
 
 
