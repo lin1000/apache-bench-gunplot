@@ -1,0 +1,234 @@
+FROM centos:7.2.1511
+LABEL description="The image will build nginx from source and enable lua and redis functions."
+RUN CPUCOUNT=$(cat /proc/cpuinfo | grep '^processor.*:' | wc -l)
+#enfore yum resolve to ipv4
+RUN echo "ip_resolve=4" >> /etc/yum.conf
+
+
+#INSTALL base package and resolve Rpmdb checksum invalid issue
+RUN yum install -y yum-plugin-ovl && \
+    yum --enablerepo=extras install -y epel-release && \
+    yum clean all 
+
+#INSTALL supervisor    
+RUN yum --disableplugin=fastestmirror update -y && \
+    yum install -y python-pip && \
+    rm -rf /var/cache/yum/* && \
+    yum clean all 
+    
+RUN pip install supervisor
+#INSTALL supervisor : copy supervisord.conf
+#COPY ./data/etc/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+
+#build nginx from source
+## install common libraries
+RUN yum --disableplugin=fastestmirror update -y && \
+    yum install -y zlib-devel wget openssl-devel pcre pcre-devel make gcc gcc-c++ curl-devel python2.7 && \
+    rm -rf /var/cache/yum/* && \
+    yum clean all  
+
+# Since we want extra depencency : LUA
+# Prepare LUA in the following sections
+
+# Prepare LUA section : lua's dependency  libreadline-dev
+RUN yum --disableplugin=fastestmirror update -y && \
+    yum install -y readline-devel && \
+    rm -rf /var/cache/yum/* && \
+    yum clean all 
+
+## Prepare LUA section : lua source code 
+## Prepare LUA section : compile lua
+ENV LUA_VERSION 5.3.4
+RUN cd root && \
+    curl -R -O http://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz && \
+    tar zxf lua-${LUA_VERSION}.tar.gz && \
+    cd lua-${LUA_VERSION} && \
+    make linux
+    #ln -s /root/lua-${LUA_VERSION}/src/lua /usr/bin/lua
+
+## Prepare LUAJIT section : download extra LuaJIT
+## Prepare LUAJIT section : compile LuaJIT
+ENV LUAJIT_VERSION 2.0.5
+ENV LUAJIT_INCLUDE_VERSION 2.0
+RUN cd root && \
+    wget --inet4-only http://luajit.org/download/LuaJIT-${LUAJIT_VERSION}.tar.gz && \
+    tar zxvf LuaJIT-${LUAJIT_VERSION}.tar.gz && \
+    cd LuaJIT-${LUAJIT_VERSION} && \
+    make PREFIX=/usr/local && \
+    make install PREFIX=/usr/local && \
+    rm -f ../LuaJIT-${LUAJIT_VERSION}.tar.gz
+
+ENV LUAJIT_LIB=/usr/local/lib
+ENV LUAJIT_INC=/usr/local/include/luajit-${LUAJIT_INCLUDE_VERSION}
+    
+
+## Prepare redis section : download lua redis library from resty
+RUN cd root && \
+    wget --inet4-only https://raw.githubusercontent.com/openresty/lua-resty-redis/master/lib/resty/redis.lua -O redis.lua && \
+    mkdir -p /root/lua/resty && \
+    mv redis.lua /root/lua/resty 
+
+## Prepare cjson section : download cjson library
+ENV LUA_CJSON_VERSION 2.1.0
+RUN cd root && \
+    wget --inet4-only https://www.kyne.com.au/~mark/software/download/lua-cjson-${LUA_CJSON_VERSION}.tar.gz && \
+    tar xzvf lua-cjson-${LUA_CJSON_VERSION}.tar.gz && \
+    cd lua-cjson-${LUA_CJSON_VERSION} && \
+    make PREFIX=/usr/local LUA_INCLUDE_DIR=/usr/local/include/luajit-2.0 && \
+    make install PREFIX=/usr/local
+
+## Prepare kafka section : download kafka lua library
+ENV LUA_RESTY_KAFKA_VERSION 0.06
+RUN cd root && \
+    wget --inet4-only https://github.com/doujiang24/lua-resty-kafka/archive/v${LUA_RESTY_KAFKA_VERSION}.tar.gz -O lua-resty-kafka-${LUA_RESTY_KAFKA_VERSION}.tar.gz && \
+    tar xzvf lua-resty-kafka-${LUA_RESTY_KAFKA_VERSION}.tar.gz && \
+    mv /root/lua-resty-kafka-${LUA_RESTY_KAFKA_VERSION}/lib/resty/* /root/lua/resty     
+
+# Build nginx from source
+
+## Prevent linking to dynamical library error when compiling dependency from source
+ENV CFLAGS="$CFLAGS -fPIC"
+
+
+## install common libraries
+RUN yum --disableplugin=fastestmirror update -y && \
+    yum install -y perl && \
+    rm -rf /var/cache/yum/* && \
+    yum clean all  
+
+## By default, both shared and static libraries are built. You can change this
+## by adding one of these options to the "configure" command:
+## --disable-shared
+## --disable-static
+## action : remove --disable-shared and --disable-static in Makefile
+## action : add -fPIC in CFLAGS for pcre zlib
+## download and extract nginx and its dependencies pcre, zlib, openssl 
+## Prepare redis section : download redis2-nginx-module
+## Prepare LUA section : download extra ngnix modules ngx_devel_kit
+# Since we want to use lua to connect to redis
+# Prepare redis2-nginx-module
+ENV NGX_DEVEL_KIT_VERSION 0.3.1rc1
+ENV REDIS2_NGINX_VERSION 0.15rc1
+ENV LUA_NGINX_MODULE_VERSION 0.10.12rc2
+ENV ECHO_NGINX_MODULE_VERSION 0.61
+## then Create missing folders and make the nginx
+RUN cd root && \
+    wget --inet4-only https://nginx.org/download/nginx-1.13.1.tar.gz && \
+    wget --inet4-only https://ftp.pcre.org/pub/pcre/pcre-8.41.tar.gz && \
+    wget --inet4-only http://www.zlib.net/zlib-1.2.11.tar.gz && \
+    wget --inet4-only https://www.openssl.org/source/openssl-1.1.0f.tar.gz && \
+    wget --inet4-only https://github.com/simplresty/ngx_devel_kit/archive/v${NGX_DEVEL_KIT_VERSION}.tar.gz -O ngx_devel_kit-${NGX_DEVEL_KIT_VERSION}.tar.gz && \
+    wget --inet4-only https://github.com/openresty/redis2-nginx-module/archive/v${REDIS2_NGINX_VERSION}.tar.gz -O redis2-nginx-module-${REDIS2_NGINX_VERSION}.tar.gz && \    
+    wget --inet4-only https://github.com/openresty/lua-nginx-module/archive/v${LUA_NGINX_MODULE_VERSION}.tar.gz -O lua-nginx-module-${LUA_NGINX_MODULE_VERSION}.tar.gz && \    
+    wget --inet4-only https://github.com/openresty/echo-nginx-module/archive/v${ECHO_NGINX_MODULE_VERSION}.tar.gz -O echo-nginx-module-${ECHO_NGINX_MODULE_VERSION}.tar.gz && \
+    tar xzvf nginx-1.13.1.tar.gz && \
+    tar xzvf pcre-8.41.tar.gz && \
+    tar xzvf zlib-1.2.11.tar.gz && \
+    tar xzvf openssl-1.1.0f.tar.gz && \
+    tar zxvf ngx_devel_kit-${NGX_DEVEL_KIT_VERSION}.tar.gz && \    
+    tar zxvf redis2-nginx-module-$REDIS2_NGINX_VERSION.tar.gz && \
+    tar zxvf lua-nginx-module-${LUA_NGINX_MODULE_VERSION}.tar.gz && \
+    tar zxvf echo-nginx-module-${ECHO_NGINX_MODULE_VERSION}.tar.gz && \
+    cd nginx-1.13.1 && \
+    ./configure --prefix=/usr/share/nginx \
+                --sbin-path=/usr/sbin/nginx \
+                --modules-path=/usr/lib/nginx/modules \
+                --conf-path=/etc/nginx/nginx.conf \
+                --error-log-path=/var/log/nginx/error.log \
+                --http-log-path=/var/log/nginx/access.log \
+                --pid-path=/run/nginx.pid \
+                --lock-path=/var/lock/nginx.lock \
+                --user=nginx \
+                --group=nginx \
+                --build=CentOS \
+                --http-client-body-temp-path=/var/lib/nginx/body \
+                --http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
+                --http-proxy-temp-path=/var/lib/nginx/proxy \
+                --http-scgi-temp-path=/var/lib/nginx/scgi \
+                --http-uwsgi-temp-path=/var/lib/nginx/uwsgi \
+                --with-openssl=../openssl-1.1.0f \
+                --with-openssl-opt=enable-ec_nistp_64_gcc_128 \
+                --with-openssl-opt=no-nextprotoneg \
+                --with-openssl-opt=no-weak-ssl-ciphers \
+                --with-openssl-opt=no-ssl3 \
+                --with-pcre=../pcre-8.41 \
+                --with-pcre-jit \
+                --with-zlib=../zlib-1.2.11 \
+                --with-compat \
+                --with-threads \
+                --with-http_addition_module \
+                --with-http_auth_request_module \
+                --with-http_dav_module \
+                --with-http_flv_module \
+                --with-http_gunzip_module \
+                --with-http_gzip_static_module \
+                --with-http_mp4_module \
+                --with-http_random_index_module \
+                --with-http_realip_module \
+                --with-http_slice_module \
+                --with-http_ssl_module \
+                --with-http_sub_module \
+                --with-http_stub_status_module \
+                --with-http_v2_module \
+                --with-http_secure_link_module \
+                --with-mail \
+                --with-mail_ssl_module \
+                --with-stream \
+                --with-stream_realip_module \
+                --with-stream_ssl_module \
+                --with-stream_ssl_preread_module \
+                --with-debug \
+                --with-ld-opt='-Wl,-rpath,/usr/local/lib' \
+                --add-module='/root/lua-nginx-module-0.10.12rc2' \
+                --add-module='/root/ngx_devel_kit-0.3.1rc1' \
+                --add-module='/root/redis2-nginx-module-0.15rc1' \
+                --add-module='/root/echo-nginx-module-0.61' && \                
+                sed -i 's/CFLAGS="/CFLAGS="-fPIC /g' /root/nginx-1.13.1/objs/Makefile && \
+    mkdir -p /var/lib/nginx/body && \
+    mkdir -p /var/lib/nginx/fastcgi && \
+    mkdir -p /var/lib/nginx/proxy && \
+    mkdir -p /var/lib/nginx/scgi && \
+    mkdir -p /var/lib/nginx/uwsgi && \
+    mkdir -p /var/log/nginx/ && \
+    make -j2 && \
+    make install && \
+    ldconfig
+
+## copy and override custom nginx config (stub_status.conf) in order to enable amplify nginx metrics
+#COPY ./etc/nginx/nginx.conf /etc/nginx/
+
+## copy static contents to nginx root folder
+#COPY ./static/index.html /usr/share/nginx/html/
+
+
+#copy static contents to nginx root folder
+COPY ./data/static /usr/share/nginx/html
+
+ENV KEEPALIVED_VERSION 1.4.2
+RUN cd /opt && \
+    wget http://www.keepalived.org/software/keepalived-${KEEPALIVED_VERSION}.tar.gz && \
+    tar -zxvf keepalived-${KEEPALIVED_VERSION}.tar.gz && \
+    cd keepalived-${KEEPALIVED_VERSION} && \
+    ./configure --prefix=/usr/local/keepalived && \
+    make && make install
+
+RUN yum --disableplugin=fastestmirror update -y && \
+    yum install -y iproute initscripts popt-devel ipvsadm net-tools && \
+    rm -rf /var/cache/yum/* && \
+    yum clean all
+
+RUN cp /opt/keepalived-${KEEPALIVED_VERSION}/keepalived/etc/init.d/keepalived /etc/rc.d/init.d/keepalived && \
+    cp /opt/keepalived-${KEEPALIVED_VERSION}/keepalived/etc/sysconfig/keepalived /etc/sysconfig/keepalived && \
+    ln -s /usr/local/keepalived/sbin/keepalived /usr/bin/
+
+
+# VOLUME
+VOLUME /data
+VOLUME /role_data
+
+#EXPOSE
+EXPOSE 80
+
+CMD ["/usr/bin/supervisord","-c", "/data/etc/supervisor/supervisord.conf"]
+
+    

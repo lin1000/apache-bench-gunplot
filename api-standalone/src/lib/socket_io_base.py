@@ -29,7 +29,7 @@ class SocketIOBase(FlaskBase):
     :returns: a SocketIOBase instance.
 
     """    
-    socketio=SocketIO(app = FlaskBase.app, ping_interval=0.2, async_mode="gevent")
+    socketio=SocketIO(app = FlaskBase.app, ping_interval=10, async_mode="gevent")
     
     def __init__(self, host, port):
         logging.debug("SocketIOBase Constructor Executing")

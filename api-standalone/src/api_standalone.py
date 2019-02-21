@@ -21,7 +21,7 @@ from jinja2 import Environment
 import jinja2
 import sys, os
 import pprint
-from lib import sqlalchemy_style_1
+from lib.model.film import Film
 
 PP = pprint.PrettyPrinter(indent=4)
 
@@ -83,11 +83,22 @@ class ApiStandaloneService(SocketIOBase):
 
 
     @SocketIOBase.app.route("/api_view")                      
-    def aoi_view():
+    def api_view():
         """Dasboard View of this Service
         Accepting Request Route from "/api_view"
 
         """                
+        session = ApiStandaloneService.Session()
+
+        films = session.query(Film)  
+        logging.info("Number of Films:" + str(films.count()))
+        for film in films:  
+            logging.info("Printing film")
+            logging.info(film.title)
+            logging.info(film.director)
+            logging.info(film.year)
+            logging.info("========")
+
         return render_template('api.html')
 
     @SocketIOBase.app.route("/")

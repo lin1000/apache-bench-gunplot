@@ -1,0 +1,1 @@
+./docker-clear-local.sh && ./docker-build-local.sh && ./docker-run-local.sh && ./docker-tail-local.sh

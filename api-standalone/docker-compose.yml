@@ -1,0 +1,19 @@
+version: '3'
+services:
+  api-standalone:
+    hostname: api-standalone
+    build: 
+      context: './'
+      dockerfile: Dockerfile
+    image: api-standalone:1.0.0
+    ports:
+     - "9090:8081"
+    volumes:
+      - ./data:/app/data
+    environment:
+      KEEPALIVED_ROLE: master              
+    privileged: true
+networks:
+  default:
+    external:
+      name: lin1000

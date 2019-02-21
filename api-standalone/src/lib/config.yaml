@@ -1,0 +1,10 @@
+db:
+  #hostname: 172.31.72.130
+  #port: 3433
+  hostname: rm-3ns40d8hp7xi206z48o.pg.rds.aliyuncs.com
+  port: 3432
+  username: lin1000
+  password: OThzY0BTQWVudg==
+  db: postgres
+sqlalchemy:
+  pool_size: 100

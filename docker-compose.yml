@@ -1,0 +1,34 @@
+version: '3'
+services:
+  api-standalone:
+    hostname: api-standalone
+    container_name: api-standalone
+    build: 
+      context: './api-standalone/'
+      dockerfile: ./Dockerfile
+    image: api-standalone:1.0.0
+    ports:
+     - "9090:8081"
+    volumes:
+      - ./api-standalone/data:/app/data
+    environment:
+      KEEPALIVED_ROLE: master              
+    privileged: true
+  nginx:
+    hostname: nginx-edge-service
+    container_name: nginx-edge-service
+    build: 
+      context: './nginx-edge-service/'
+      dockerfile: ./Dockerfile.centos
+    ports:
+     - "9091:80"
+    volumes:
+      - ./nginx-edge-service/data:/data
+      - ./nginx-edge-service/role/nginx_master/data:/role_data
+    environment:
+      KEEPALIVED_ROLE: master              
+    privileged: true    
+networks:
+  default:
+    external:
+      name: lin1000

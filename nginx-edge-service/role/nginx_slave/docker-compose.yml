@@ -1,0 +1,20 @@
+version: '3'
+services:
+  nginx_2:
+    #build:
+    #  context: '../../'    
+    #  dockerfile: Dockerfile.centos      
+    image: outside:5000/nginx-edge-service:latest
+    ports:
+     - "80:80"
+    volumes:
+      - ../../data:/data
+      - ./data:/role_data
+    environment:
+      KEEPALIVED_ROLE: slave  
+    extra_hosts:
+       - "outside:${HOST_IP}"
+       - "nginx_master:${edge1}"
+       - "nginx_slave:${edge2}"       
+    network_mode: "host"
+    privileged: true

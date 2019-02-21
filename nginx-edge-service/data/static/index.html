@@ -1,0 +1,49 @@
+<html>
+<head>
+    <!--keen.io-->
+    <script type="text/javascript">
+        function createKeenWebAutoCollector(){window.keenWebAutoCollector=window.KeenWebAutoCollector.create({projectId:'59950dadc9e77c0001a674d7',writeKey:'D572D097887C1599B9C709BFEBEE72AF92BCB0695DE9E0D9C89E21A9F90D390EED749EE3EC81F249366AC9E0EEC07CB40AFF7321771BC02AC1F0AC35ECBFE9079ABE7F5914DD2CCEB015A1F85C3134F63C4BA529E0DF9A94622AB010B4468F86',onloadCallbacks:window.keenWebAutoCollector.onloadCallbacks}),window.keenWebAutoCollector.loaded()}function initKeenWebAutoCollector(){window.keenWebAutoCollector.domReady()?window.createKeenWebAutoCollector():document.addEventListener("readystatechange",function(){window.keenWebAutoCollector.domReady()&&window.createKeenWebAutoCollector()})}window.keenWebAutoCollector={onloadCallbacks:[],onload:function(a){this.onloadCallbacks.push(a)},domReady:function(){return["ready","complete"].indexOf(document.readyState)>-1}};
+    </script>
+    <!--keen.io-->
+    <script async type="text/javascript" src="https://d26b395fwzu5fz.cloudfront.net/keen-web-autocollector-1.0.8.min.js" onload="initKeenWebAutoCollector()"></script>      
+    <!--linkedin javascript sdk-->
+    <script type="text/javascript" src="//platform.linkedin.com/in.js">
+        api_key:   {{ linkedinappkey }}
+        onLoad:    onLinkedInLoad
+        authorize: false
+    </script>
+    <script type="text/javascript">
+        function onLinkedInLoad(){
+            IN.Event.on(IN, "auth", OnLinkedInAuth);
+        }
+
+        function OnLinkedInAuth() {
+            IN.API.Profile("me").result(ShowProfileData); 
+        }
+
+        function ShowProfileData(profiles) {
+            var member = profiles.values[0];
+            //var id=member.id;
+            //var firstName=member.firstName; 
+            //var lastName=member.lastName; 
+            //var photo=member.pictureUrl; 
+            //var headline=member.headline; 
+            document.getElementById("profiles").innerHTML = "<p id=\"" + member.id + "\">Hello " + member.firstName + " " + member.lastName + "</p>";
+        }     
+    </script>
+</head>
+<body>
+
+    <pre> 
+        ______                     __    _     
+        /_  __/___  ____  __  __   / /   (_)___ 
+         / / / __ \/ __ \/ / / /  / /   / / __ \
+        / / / /_/ / / / / /_/ /  / /___/ / / / /
+       /_/  \____/_/ /_/\__, /  /_____/_/_/ /_/ 
+                       /____/          Local                 
+    </pre>
+    <script type="IN/Login"></script>
+    <div id="profiles"></div>
+
+</body>
+</html>

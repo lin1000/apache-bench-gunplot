@@ -4,3 +4,4 @@ jsonify
 sphinx
 psycopg2-binary
 SQLAlchemy
+pyyaml

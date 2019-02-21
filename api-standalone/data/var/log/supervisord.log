@@ -1,0 +1,14 @@
+2018-09-25 05:45:58,152 WARN received SIGTERM indicating exit request
+2018-09-25 05:45:58,177 DEBG killing api (pid 9) with signal SIGTERM
+2018-09-25 05:45:58,204 INFO waiting for api to die
+2018-09-25 05:45:58,672 DEBG fd 8 closed, stopped monitoring <POutputDispatcher at 140058539756216 for <Subprocess at 140058537760312 with name api in state STOPPING> (stdout)>
+2018-09-25 05:45:58,677 INFO stopped: api (terminated by SIGTERM)
+2018-09-25 05:45:58,678 DEBG received SIGCLD indicating a child quit
+2018-09-25 07:21:34,030 CRIT Supervisor running as root (no user in config file)
+2018-09-25 07:21:34,099 INFO RPC interface 'supervisor' initialized
+2018-09-25 07:21:34,100 CRIT Server 'inet_http_server' running without any HTTP authentication checking
+2018-09-25 07:21:34,101 INFO RPC interface 'supervisor' initialized
+2018-09-25 07:21:34,101 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2018-09-25 07:21:34,102 INFO supervisord started with pid 1
+2018-09-25 07:21:35,111 INFO spawned: 'api' with pid 9
+2018-09-25 07:21:36,114 INFO success: api entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

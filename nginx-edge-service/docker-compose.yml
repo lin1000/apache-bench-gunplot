@@ -1,0 +1,20 @@
+version: '3'
+services:
+  nginx:
+    hostname: nginx-edge-service
+    build: 
+      context: './'
+      dockerfile: Dockerfile.centos
+    ports:
+     - "9091:80"
+    volumes:
+      - ./data:/data
+      - ./role/nginx_master/data:/role_data
+    environment:
+      KEEPALIVED_ROLE: master              
+    network_mode: "host"
+    privileged: true
+networks:
+  default:
+    external:
+      name: lin1000
